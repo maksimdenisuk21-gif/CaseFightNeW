@@ -1,10 +1,8 @@
 """
 CaseFight — Telegram Mini App
 Полный backend: FastAPI + PostgreSQL + Telegram Stars + Crash + Arena + Upgrade + WebSocket
-"""
-import sys
-if sys.version_info >= (3, 14):
-    raise RuntimeError("Use Python 3.11!")
+""" 
+
 import asyncio
 import hashlib
 import hmac
