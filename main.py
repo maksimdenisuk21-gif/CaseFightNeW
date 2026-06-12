@@ -267,7 +267,6 @@ async def get_admin(u: User = Depends(get_current_user)) -> User:
     if not u.is_admin: raise HTTPException(403, "Admin only")
     return u
 
-# Rate limiter
 class RateLimiter:
     def __init__(self):
         self._reqs: Dict[str, list] = {}
@@ -798,9 +797,20 @@ h2{font-size:15px;margin-bottom:8px}h3{font-size:14px;margin-bottom:8px}
 <div id="modal" class="modal" style="display:none" onclick="if(event.target===this)closeModal()"><div class="modal-content" id="modal-body"></div></div>
 <script>
 var API=window.location.origin,STATE={user:null,balance:0},H={};
-if(window.Telegram&&window.Telegram.WebApp){var tg=window.Telegram.WebApp;tg.ready();tg.expand();H['X-Telegram-Init-Data']=tg.initData}
+if(window.Telegram&&window.Telegram.WebApp){
+    var tg=window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    H['X-Telegram-Init-Data']=tg.initData;
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='flex';
+    nav('home');
+    loadUser();
+}else{
+    document.getElementById('loading').innerHTML='<p style="color:#f44336;text-align:center;padding:20px">Откройте через Telegram!</p>';
+}
 async function api(m,u,b){var o={method:m,headers:Object.assign({'Content-Type':'application/json'},H)};if(b)o.body=JSON.stringify(b);var r=await fetch(API+u,o),d=await r.json();if(!r.ok)throw new Error(d.detail||'Error');return d}
-async function loadUser(){try{STATE.user=await api('GET','/auth/me');STATE.balance=parseFloat(STATE.user.balance);document.getElementById('bal').textContent=fmt(STATE.balance);document.getElementById('loading').style.display='none';document.getElementById('app').style.display='flex';nav('home')}catch(e){document.getElementById('loading').innerHTML='<p style="color:#f44336;text-align:center;padding:20px">Откройте через Telegram!</p>'}}
+async function loadUser(){try{STATE.user=await api('GET','/auth/me');STATE.balance=parseFloat(STATE.user.balance);document.getElementById('bal').textContent=fmt(STATE.balance)}catch(e){}}
 function fmt(n){return parseFloat(n).toLocaleString('ru-RU',{maximumFractionDigits:2})}
 function toast(m,e){var d=document.createElement('div');d.className='toast';if(e)d.style.borderLeftColor='#f44336';d.textContent=m;document.getElementById('toasts').appendChild(d);setTimeout(function(){d.remove()},2500)}
 function showModal(h){document.getElementById('modal-body').innerHTML=h;document.getElementById('modal').style.display='flex'}
@@ -816,7 +826,6 @@ else if(p==='upgrade'){c.innerHTML+='<h2>⬆️ Апгрейд</h2><p style="fon
 else if(p==='shop'){c.innerHTML+='<h2>🛒 Магазин</h2><div class="case-list" id="sl">Загрузка...</div>';try{var s=await api('GET','/shop/');document.getElementById('sl').innerHTML=s.upgrades.map(function(i){return'<div class="case-card"><div class="case-name">'+i.name+'</div><button class="btn btn-sm" onclick="shopBuy(\''+i.type+'\')">⭐'+fmt(i.price)+'</button></div>'}).join('')+s.direct_items.map(function(i){return'<div class="case-card"><div class="case-name">'+i.name+'</div><button class="btn btn-sm" onclick="shopBuy(\''+i.type+'\')">⭐'+fmt(i.price)+'</button></div>'}).join('')}catch(e){}}
 else if(p==='deposit'){c.innerHTML+='<h2>💳 Баланс: ⭐'+fmt(STATE.balance)+'</h2><input type="number" id="da" placeholder="Сумма Stars (мин 50)" value="50"><button class="btn" onclick="deposit()">⭐ Пополнить через Telegram Stars</button><div style="margin-top:16px"><input type="number" id="wa" placeholder="Сумма вывода (мин 100)" value="100"><button class="btn" onclick="withdraw()">💸 Вывести</button></div>'}
 else if(p==='admin'&&STATE.user&&STATE.user.is_admin){c.innerHTML+='<h2>🔧 Админ-панель</h2><div class="menu-list"><div class="menu-item" onclick="adminWithdraws()"><div class="menu-name">💸 Заявки на вывод</div><div>→</div></div><div class="menu-item" onclick="showAdminBalance()"><div class="menu-name">💰 Изменить баланс</div><div>→</div></div><div class="menu-item" onclick="showAdminBlock()"><div class="menu-name">🚫 Блокировка</div><div>→</div></div><div class="menu-item" onclick="showAdminGive()"><div class="menu-name">🎁 Выдать предмет</div><div>→</div></div></div>'}}
-
 window.selUp=function(id){if(!window._up)window._up=[];if(window._up.length>=2)window._up=[];window._up.push(id);document.getElementById('u_'+id).style.border='2px solid #f5a623';if(window._up.length===2){var a=window._ui.find(function(i){return i.id===window._up[0]}),b=window._ui.find(function(i){return i.id===window._up[1]});showModal('<h3>Апгрейд?</h3><p>'+a.item_name+' → '+b.item_name+'</p><p style="color:#ff9800;font-size:12px">⚠️ При неудаче оба уничтожаются!</p><button class="btn" onclick="doUpgrade()">Подтвердить</button>')}};
 window.doUpgrade=async function(){try{var r=await api('POST','/upgrade/',{item_id:window._up[0],target_item_id:window._up[1]});toast(r.message,r.success?0:1);closeModal();nav('inv')}catch(e){toast(e.message,1)}};
 window.openCaseModal=async function(id){var c=await api('GET','/cases/'+id);showModal('<h3>'+c.name+'</h3><p>Цена: ⭐'+fmt(c.price)+'</p><button class="btn" onclick="openCase('+id+','+c.price+')">🎲 Открыть</button>')};
@@ -839,7 +848,6 @@ window.showAdminBlock=function(){showModal('<h3>🚫 Блокировка</h3><i
 window.adminBlock=async function(b){try{await api('POST','/admin/block',{user_id:parseInt(document.getElementById('abl_uid').value),block:b});toast(b?'Заблокирован':'Разблокирован');closeModal()}catch(e){toast(e.message,1)}};
 window.showAdminGive=function(){showModal('<h3>🎁 Выдать предмет</h3><input type="number" id="ag_uid" placeholder="ID пользователя"><input type="text" id="ag_name" placeholder="Название"><input type="number" id="ag_val" placeholder="Стоимость"><select id="ag_rar"><option value="common">Обычный</option><option value="uncommon">Необычный</option><option value="rare">Редкий</option><option value="epic">Эпический</option><option value="legendary">Легендарный</option></select><button class="btn" onclick="adminGive()">Выдать</button>')};
 window.adminGive=async function(){try{await api('POST','/admin/give-item',{user_id:parseInt(document.getElementById('ag_uid').value),item_name:document.getElementById('ag_name').value,item_value:parseFloat(document.getElementById('ag_val').value),item_rarity:document.getElementById('ag_rar').value});toast('Предмет выдан!');closeModal()}catch(e){toast(e.message,1)}};
-loadUser();
 </script></body></html>"""
 
 if __name__ == "__main__":
